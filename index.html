@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cálculo de distancias · Subestaciones</title>
+<style>
+:root{--bg:#f5f7fa;--card:#fff;--tx:#18212b;--mut:#5d6b7a;--bd:#d9e0e8;--ac:#0b5fff;--acbg:#e8efff;--ok:#0a7d3c;--okbg:#e3f6ea;--no:#b3261e;--nobg:#fdeaea;--wa:#8a5a00;--wabg:#fff4d6;--live:#d93025;--zone:#f2b8b5;--safe:#bfe3f2;--steel:#7a8794}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1419;--card:#18202a;--tx:#e6edf3;--mut:#9aa7b5;--bd:#2b3643;--ac:#6ea0ff;--acbg:#1a2740;--ok:#5fd68c;--okbg:#12301f;--no:#ff8a80;--nobg:#3a1a18;--wa:#ffc861;--wabg:#3a2e12;--live:#ff6b5e;--zone:#5a2522;--safe:#163a4a;--steel:#8d9aa8}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:980px;margin:0 auto;padding:20px 16px 40px}
+h1{font-size:1.4rem;margin:0 0 4px}
+h2{font-size:1.05rem;margin:0 0 12px}
+h3{font-size:.95rem;margin:20px 0 8px}
+.eyebrow{font-size:.78rem;color:var(--mut);letter-spacing:.02em;margin:0 0 6px}
+.sub{color:var(--mut);margin:0 0 14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 20px}
+.chip{font-size:.8rem;padding:3px 10px;border-radius:999px;background:var(--acbg);color:var(--ac);font-weight:600}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:16px;margin-bottom:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+label{display:block;font-size:.82rem;color:var(--mut);margin-bottom:3px}
+.hint{display:block;font-size:.74rem;color:var(--mut);margin-top:3px;line-height:1.35}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+input:focus,select:focus{outline:2px solid var(--ac);outline-offset:0}
+input[disabled],select[disabled]{opacity:.5}
+.chk{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--tx);margin:0}
+.chk input{width:auto}
+details summary{cursor:pointer;color:var(--ac);margin-top:12px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px}
+.kpi{border:1px solid var(--bd);border-radius:10px;padding:10px}
+.kpi b{display:block;font-size:1.25rem}
+.kpi span{font-size:.8rem;color:var(--tx)}
+.kpi em{display:block;font-style:normal;font-size:.74rem;color:var(--mut);margin-top:3px;line-height:1.35}
+.kpi.hl{border-color:var(--ac)}
+.kpi.warn{border-color:var(--wa)}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px}
+th,td{padding:8px 10px;text-align:right;border-bottom:1px solid var(--bd);white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+th{font-size:.78rem;color:var(--mut);font-weight:600}
+td.l,th.l{text-align:left;white-space:normal}
+tr.grp td{font-weight:700;color:var(--ac);background:var(--acbg);font-size:.82rem}
+.ok{color:var(--ok);font-weight:600}
+.no{color:var(--no);font-weight:600}
+.wa{color:var(--wa);font-weight:600}
+.banner{padding:12px 14px;border-radius:10px;font-weight:600;margin-bottom:14px}
+.banner.ok{background:var(--okbg);color:var(--ok)}
+.banner.no{background:var(--nobg);color:var(--no)}
+.banner.wa{background:var(--wabg);color:var(--wa)}
+.note{background:var(--wabg);color:var(--wa);padding:8px 10px;border-radius:8px;margin-top:10px;font-size:.86rem}
+.info{background:var(--acbg);color:var(--tx);padding:10px 12px;border-radius:8px;margin-top:10px;font-size:.86rem}
+.btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+button{font:inherit;padding:8px 14px;border-radius:8px;border:1px solid var(--ac);background:var(--ac);color:#fff;cursor:pointer}
+button.sec{background:transparent;color:var(--ac)}
+button.mini{padding:3px 8px;font-size:.8rem}
+.mut{color:var(--mut)}
+.f{font-size:.8rem;color:var(--mut);margin:6px 0 0}
+/* memoria */
+.step{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.step:last-child{border-bottom:0}
+.num{width:28px;height:28px;border-radius:50%;background:var(--acbg);color:var(--ac);font-weight:700;font-size:.82rem;display:flex;align-items:center;justify-content:center}
+.step>div{min-width:0}
+.step h4{margin:2px 0 2px;font-size:.95rem}
+.step p{margin:0 0 6px;color:var(--mut);font-size:.86rem}
+.eq{font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;font-size:1.06rem;line-height:2.1;padding:3px 0;overflow-x:auto;white-space:nowrap}
+.eq i{font-style:italic}
+.eq .r{font-weight:700;color:var(--tx)}
+.eq .ad{display:inline-block;margin-left:10px;padding:0 8px;border-radius:6px;background:var(--okbg);color:var(--ok);font-family:system-ui,-apple-system,"Segoe UI",sans-serif;font-size:.82rem;font-weight:700;line-height:1.7}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .15em;line-height:1.25}
+.fr>span:first-child{border-bottom:1px solid currentColor;padding:0 .2em}
+.fr>span:last-child{padding:0 .2em}
+.sq{border-top:1px solid currentColor;padding:0 .1em}
+.memohead{margin:18px 0 0;font-size:.82rem;font-weight:700;color:var(--ac);text-transform:uppercase;letter-spacing:.04em}
+svg text{font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.8rem;color:var(--mut);margin-top:8px}
+.sw{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:8px;font-size:.88rem;opacity:0;transition:opacity .2s;pointer-events:none}
+#toast.on{opacity:1}
+footer{font-size:.8rem;color:var(--mut);line-height:1.6}
+footer ol{padding-left:18px;margin:6px 0 0}
+@media (max-width:600px){.eq{white-space:normal;line-height:2.3}.eq .ad{margin-left:0}}
+@media print{
+  body{background:#fff;color:#000;font-size:12px}
+  .card{break-inside:avoid;border-color:#bbb}
+  .btns,#casesCard,details,.noprint{display:none!important}
+  input,select{border:0;padding:0;background:none;appearance:none;-webkit-appearance:none}
+}
+</style>
+</head>
+<body>
+<main>
+<p class="eyebrow">Escuela Colombiana de Ingeniería Julio Garavito · Subestaciones Eléctricas 2026-2 · Proyecto final</p>
+<h1>Cálculo de distancias en subestaciones</h1>
+<p class="sub">Distancias mínimas, de seguridad y de diseño a partir del BIL, contrastadas con la Tabla 3.22.1 del RETIE. Permite trabajar con el BIL ya corregido por altitud (criterio de la Entrega 2) o corregir también las distancias por densidad del aire. Funciona para cualquier subestación; los valores iniciales son los de la S/E Termales 115 kV.</p>
+<div class="chips" id="chips"></div>
+
+<!-- 1. DATOS -->
+<section class="card">
+<h2>1. Datos de la subestación</h2>
+<div class="grid">
+  <div><label for="Um">Tensión más elevada Um (kV)</label><select id="Um"></select></div>
+  <div><label for="BILsel">BIL normalizado (kV)</label><select id="BILsel"></select><span class="hint">Valores de IEC 60071-1 para la Um elegida.</span></div>
+  <div id="BILmanBox" hidden><label for="BILman">BIL (kV)</label><input id="BILman" type="number" min="20" step="5"></div>
+  <div><label for="h">Altitud (msnm)</label><input id="h" type="number" step="50" min="0"></div>
+  <div><label for="t">Temperatura ambiente (°C)</label><input id="t" type="number" step="1"><span class="hint">Media del sitio. Con la máxima el cálculo es más conservador.</span></div>
+</div>
+<div class="grid" style="margin-top:12px">
+  <div><label for="dMode">Densidad relativa del aire δ</label>
+    <select id="dMode">
+      <option value="none">Sin corrección: BIL ya corregido por Ka</option>
+      <option value="iec">Corregir con presión exponencial (IEC 60071-2)</option>
+      <option value="baro">Corregir con fórmula barométrica (cmHg)</option>
+      <option value="man">Valor manual</option>
+    </select><span class="hint" id="dHint"></span></div>
+  <div id="dManBox"><label for="dMan">δ manual</label><input id="dMan" type="number" step="0.001" min="0.4" max="1.1"></div>
+  <div><label for="fff">Factor fase-fase</label><input id="fff" type="number" step="0.05" min="1" max="2"><span class="hint">Entrega 2: 1,15 (criterio de diseño). Apuntes del curso: 1,4 a 2.</span></div>
+  <div><label for="galibo">Gálibo del vehículo más alto (m)</label><input id="galibo" type="number" step="0.1" min="0.5"><span class="hint">Grúa o carro canasta de mantenimiento.</span></div>
+</div>
+<div class="grid" style="margin-top:12px">
+  <div><label class="chk"><input type="checkbox" id="rnd"> Redondeo constructivo</label><span class="hint">Adoptados al múltiplo de 0,05 m superior; amarre de pórticos a 0,50 m.</span></div>
+</div>
+<details>
+<summary>Parámetros del método (avanzado)</summary>
+<div class="grid" style="margin-top:10px">
+  <div><label for="Es">Gradiente crítico Es (kV/m)</label><input id="Es" type="number" step="10"></div>
+  <div><label for="kS">Factor de seguridad</label><input id="kS" type="number" step="0.01"></div>
+  <div><label for="nExp">Exponente n de δ</label><input id="nExp" type="number" step="0.05"></div>
+  <div><label for="kVB">Factor del valor básico</label><input id="kVB" type="number" step="0.01"></div>
+</div>
+</details>
+<div class="btns">
+  <button id="btnSave">+ Guardar caso para comparar</button>
+  <button class="sec" id="btnReset">Restablecer valores</button>
+</div>
+</section>
+
+<!-- 2. CONDUCTOR -->
+<section class="card">
+<h2>2. Barraje, vano y bahía</h2>
+<div class="grid">
+  <div><label for="barra">Tipo de barraje / conexiones</label>
+    <select id="barra"><option value="flex">Flexible (cable tendido)</option><option value="rig">Rígido (tubo)</option></select></div>
+  <div><label for="cond">Material del conductor</label><select id="cond"><option value="ACSR">ACSR (K = 10)</option><option value="Cu">Cobre (K = 1,75)</option><option value="otro">Otro (K manual)</option></select></div>
+  <div><label for="K">Constante K</label><input id="K" type="number" step="0.05"></div>
+  <div><label for="vano">Vano de barras (m)</label><input id="vano" type="number" step="0.5" min="1"></div>
+</div>
+<div class="grid" style="margin-top:12px">
+  <div><label for="fMode">Flecha del conductor</label>
+    <select id="fMode"><option value="pct">Porcentaje del vano</option><option value="ten">Por tensión de tendido (w, Fh)</option></select></div>
+  <div id="pctBox"><label for="pct">Flecha (% del vano)</label><input id="pct" type="number" step="0.1" min="0.1" max="10"><span class="hint">Rango usual: 2 % a 3 %.</span></div>
+  <div class="tenBox"><label for="w">Peso del conductor w (kg/m)</label><input id="w" type="number" step="0.001" min="0.01"></div>
+  <div class="tenBox"><label for="Fh">Tensión horizontal Fh (kgf)</label><input id="Fh" type="number" step="10" min="1"></div>
+  <div><label for="Wb">Ancho de bahía de diseño (m)</label><input id="Wb" type="number" step="0.5" min="0"><span class="hint">Se compara con el mínimo calculado (0 = no verificar).</span></div>
+</div>
+<p class="note" id="condNote"></p>
+</section>
+
+<!-- 3. RESULTADOS -->
+<section class="card">
+<h2>3. Resultados</h2>
+<div id="banner" class="banner ok"></div>
+<h3>3.1 Distancias mínimas</h3>
+<div class="kpis" id="k31"></div>
+<h3>3.2 Distancias de seguridad</h3>
+<div class="kpis" id="k32"></div>
+<h3>3.3 Distancias de diseño</h3>
+<div class="kpis" id="k33"></div>
+<h3>Verificaciones</h3>
+<div class="scroll"><table id="tChecks"></table></div>
+</section>
+
+<!-- 4. CORTE -->
+<section class="card">
+<h2>4. Corte esquemático de una bahía</h2>
+<div id="svgBox"></div>
+<div class="legend">
+  <span><i class="sw" style="background:var(--live)"></i>Partes energizadas</span>
+  <span><i class="sw" style="background:var(--zone)"></i>Zona de riesgo (valor básico)</span>
+  <span><i class="sw" style="background:var(--safe)"></i>Zona de seguridad del personal (2,25 m)</span>
+</div>
+<p class="f">Esquema a escala con los valores adoptados: barras en su punto más bajo, equipos y separación entre fases. Si se indicó un ancho de bahía de diseño, las columnas se dibujan con ese ancho.</p>
+</section>
+
+<!-- 5. CONSOLIDADO -->
+<section class="card">
+<h2>5. Consolidado de distancias</h2>
+<p class="mut" style="margin-top:0">La Tabla 3.22.1.c del RETIE está referida a 1000 m. El adoptado es el mayor entre lo calculado y la tabla, con el redondeo constructivo si está activo.</p>
+<div class="scroll"><table id="tCons"></table></div>
+<p class="f" id="consNote"></p>
+<div class="btns"><button class="sec" id="btnCopy">Copiar tabla (pegar en Word o Excel)</button></div>
+</section>
+
+<!-- 6. MEMORIA -->
+<section class="card">
+<h2>6. Memoria de cálculo</h2>
+<p class="mut" style="margin-top:0">Cada paso con su expresión, los valores sustituidos y el valor adoptado.</p>
+<div id="memo"></div>
+<div class="btns">
+  <button class="sec" id="btnCopyMemo">Copiar memoria como texto</button>
+  <button class="sec" id="btnPrint" hidden>Imprimir o guardar en PDF</button>
+</div>
+</section>
+
+<!-- 7. CASOS -->
+<section class="card" id="casesCard" hidden>
+<h2>7. Casos guardados</h2>
+<div class="scroll"><table id="tCases"></table></div>
+</section>
+
+<footer class="card">
+<b>Referencias</b>
+<ol>
+<li>Apuntes del curso Subestaciones Eléctricas 2026-2, ECI: método convencional de distancias (operación y mantenimiento).</li>
+<li>Ministerio de Minas y Energía, RETIE, Resolución 40284 de 2026, Libro 3: Tablas 3.22.1.a y 3.22.1.c (adaptadas de la Resolución 90708 de 2013).</li>
+<li>IEC 60071-1 e IEC 60071-2, coordinación de aislamiento: niveles normalizados y corrección atmosférica.</li>
+<li>Mejía Villegas S.A., <i>Subestaciones de alta y extra alta tensión</i>, 2.ª ed., 2003: alturas de equipos, barras y remate de líneas.</li>
+<li>J. C. Romero Escobar, <i>Diseño de subestaciones eléctricas</i>, cap. 5, ECI, 2014.</li>
+</ol>
+<p style="margin:8px 0 0">Herramienta académica de apoyo al diseño de la S/E Termales 115 kV. Los resultados deben revisarse contra la norma vigente y los datos definitivos de equipos y conductores.</p>
+</footer>
+</main>
+<div id="toast"></div>
+
+<script id="engine">
+/* ===== Motor de cálculo (sin DOM) ===== */
+const BIL_IEC={3.6:[20,40],7.2:[40,60],12:[60,75,95],17.5:[75,95],24:[95,125,145],36:[145,170],52:[250],72.5:[325],100:[380,450],123:[450,550],145:[450,550,650],170:[550,650,750],245:[650,750,850,950,1050],300:[850,950,1050],362:[950,1050,1175],420:[1050,1175,1300,1425],550:[1175,1300,1425,1550],800:[1675,1800,1950,2100]};
+/* RETIE Tabla 3.22.1.c: BIL, d mín IEC [2], valor básico [5], circulación de personal [7], trabajo horizontal [10], trabajo vertical [12]; null = (*) */
+const RETIE_C=[[60,0.09,0.10,null,null,null],[75,0.12,0.13,null,null,null],[95,0.16,0.18,null,null,null],[125,0.22,0.24,null,null,null],[170,0.32,0.35,null,null,null],[200,0.38,0.42,null,null,null],[250,0.48,0.53,null,null,null],[325,0.63,0.70,null,null,null],[380,0.75,0.83,3.08,null,null],[450,0.90,1.00,3.25,null,null],[550,1.10,1.21,3.46,2.96,null],[650,1.30,1.43,3.68,3.18,null],[750,1.50,1.65,3.90,3.40,2.90],[850,1.70,1.87,4.12,3.62,3.12],[950,1.90,2.09,4.34,3.84,3.34],[1050,2.10,2.31,4.56,4.06,3.56],[1175,2.35,2.59,4.84,4.34,3.84],[1300,2.60,2.86,5.11,4.61,4.11],[1425,2.85,3.02,5.27,4.77,4.27],[1550,3.10,3.29,5.54,5.04,4.54]];
+/* RETIE Tabla 3.22.1.a: distancia R al encerramiento, por Um del nivel de tensión */
+const RETIE_A=[[7.2,3.0,"0,151–7,2 kV"],[17.5,3.1,"13,8/13,2/11,4 kV"],[52,3.2,"34,5/44 kV"],[72.5,3.5,"66/57,5 kV"],[123,4.0,"115/110 kV"],[245,4.7,"230/220 kV"],[550,5.3,"500 kV"]];
+
+function densidad(mode,h,t,dMan){
+  if(mode==="none") return {delta:1};
+  if(mode==="man") return {delta:dMan};
+  if(mode==="baro"){const b=Math.pow(10,Math.log10(76)-h/18336);return {delta:3.92*b/(273+t),b};}
+  const pk=101.3*Math.exp(-h/8150);return {delta:(pk/101.3)*(293/(273+t)),pk};
+}
+function retieRow(BIL){
+  const ex=RETIE_C.find(r=>r[0]===BIL); if(ex) return {row:ex,exact:true};
+  if(BIL<RETIE_C[0][0]||BIL>RETIE_C[RETIE_C.length-1][0]) return {row:null,exact:false};
+  let i=0; while(RETIE_C[i+1][0]<BIL) i++;
+  const a=RETIE_C[i],b=RETIE_C[i+1],f=(BIL-a[0])/(b[0]-a[0]),row=[BIL];
+  for(let k=1;k<6;k++) row.push(a[k]==null||b[k]==null?null:a[k]+f*(b[k]-a[k]));
+  return {row,exact:false};
+}
+function retieR(Um){
+  const ex=RETIE_A.find(r=>r[0]===Um); if(ex) return {R:ex[1],exact:true,lab:ex[2]};
+  if(Um<RETIE_A[0][0]) return {R:RETIE_A[0][1],exact:false,lab:"bajo la tabla"};
+  if(Um>RETIE_A[RETIE_A.length-1][0]) return {R:RETIE_A[RETIE_A.length-1][1],exact:false,lab:"sobre la tabla"};
+  let i=0; while(RETIE_A[i+1][0]<Um) i++;
+  const a=RETIE_A[i],b=RETIE_A[i+1]; return {R:a[1]+(Um-a[0])/(b[0]-a[0])*(b[1]-a[1]),exact:false,lab:"interpolado"};
+}
+const mx=(a,b)=>b==null?a:Math.max(a,b);
+const roundUp=(x,s)=>Math.ceil(x/s-1e-9)*s;
+const f2=x=>x.toFixed(2).replace(".",",");
+const ge=(a,b)=>`${f2(a)} m ${a>=b-1e-9?"≥":"<"} ${f2(b)} m`;
+
+function calcular(p){
+  const r={p}, step=p.rnd?0.05:0, RU=x=>step?roundUp(x,step):x, RP=x=>p.rnd?roundUp(x,0.5):x;
+  Object.assign(r,densidad(p.dMode,p.h,p.t,p.dMan));
+  const ret=retieRow(p.BIL), R=ret.row; r.retie=ret; r.R=R;
+  /* 3.1 mínimas */
+  r.dft=p.kS*Math.pow(r.delta,-p.nExp)*p.BIL/p.Es;
+  r.dftBase=mx(r.dft,R&&R[1]); r.dftA=RU(r.dftBase);
+  r.dffMin=1.4*r.dftBase; r.dffMax=2*r.dftBase;
+  r.dff=p.fff*r.dftBase; r.dffA=RU(r.dff);
+  /* 3.2 seguridad */
+  r.VB=p.kVB*r.dft; r.VBa=mx(r.VB,R&&R[2]);
+  r.Dv=2.25+r.VBa; r.DvA=RU(mx(r.Dv,R&&R[3]));
+  r.Dh=1.75+r.VBa; r.DhA=RU(mx(r.Dh,R&&R[4]));
+  r.Dtv=1.25+r.VBa; r.DtvA=RU(mx(r.Dtv,R&&R[5]));
+  r.Tveh=r.VBa+0.70; r.Hveh=r.VBa+p.galibo+0.70; r.HvehA=RU(r.Hveh);
+  r.Rcer=retieR(p.Um);
+  /* flecha y flexibilidad */
+  r.flex=p.barra==="flex";
+  r.f_m=!r.flex?0:(p.fMode==="pct"?p.pct/100*p.vano:p.vano*p.vano*p.w/(8*p.Fh));
+  r.f_cm=r.f_m*100;
+  r.Kuse=r.flex?p.K:0; r.sway=r.Kuse*Math.sqrt(r.f_cm);
+  r.Sf=(r.dffA*100+r.sway)/100; r.SfA=RU(r.Sf);
+  r.Dfe=(r.dftA*100+r.sway)/100; r.DfeA=RU(r.Dfe);
+  r.WbMin=2*r.SfA+2*r.DfeA;
+  /* 3.3 diseño */
+  r.heqF=2.30+0.0105*p.Um; r.heqA=RU(Math.max(r.heqF,r.DvA));
+  r.hbF=5+0.0125*p.Um; r.hbReq=Math.max(r.hbF,r.heqA+r.dffA); r.hbA=RU(r.hbReq);
+  r.amarre=r.hbA+r.f_m; r.amarreA=r.flex?RP(r.amarre):r.hbA; r.hbLow=r.amarreA-r.f_m;
+  r.hremF=5+0.006*p.Um; r.hremA=RU(Math.max(6,r.hremF));
+  r.Wb=p.Wb>0?p.Wb:r.WbMin;
+  r.checks=[
+    {txt:"Distancia fase-tierra calculada frente a la mínima IEC de la tabla RETIE",ok:!R||r.dft>=R[1]-1e-9,cmp:R?ge(r.dft,R[1]):"BIL fuera de tabla",bad:`Rige la tabla: ${f2(r.dftA)} m`,lvl:"wa"},
+    {txt:"Altura de equipos (fórmula) frente a la circulación de personal",ok:r.heqF>=r.DvA-1e-9,cmp:ge(r.heqF,r.DvA),bad:`Rige la circulación de personal: ${f2(r.heqA)} m`,lvl:"wa"},
+    {txt:"Barras sobre equipos: separación vertical ≥ distancia fase-fase",ok:r.hbF-r.heqA>=r.dffA-1e-9,cmp:ge(r.hbF-r.heqA,r.dffA),bad:`Se eleva la barra a ${f2(r.hbA)} m`,lvl:"wa"},
+    {txt:"Punto más bajo de barras frente a la circulación de vehículos",ok:r.hbLow>=r.HvehA-1e-9,cmp:ge(r.hbLow,r.HvehA),bad:"No apto para vías bajo barras",lvl:"no"},
+    {txt:"Remate de líneas frente a la circulación de vehículos",ok:r.hremA>=r.HvehA-1e-9,cmp:ge(r.hremA,r.HvehA),bad:`Si hay vías bajo las llegadas, usar ${f2(r.HvehA)} m`,lvl:"wa"},
+    {txt:"Ancho de bahía de diseño frente al mínimo por fases",ok:!(p.Wb>0)||p.Wb>=r.WbMin-1e-9,cmp:p.Wb>0?ge(p.Wb,r.WbMin):"Sin ancho de diseño",bad:"Ampliar la bahía",lvl:"no"}
+  ];
+  return r;
+}
+if(typeof module!=="undefined") module.exports={calcular,densidad,retieRow,retieR,BIL_IEC,RETIE_C};
+</script>
+
+<script>
+/* ===== Interfaz ===== */
+const DEF={Um:123,BIL:550,h:1800,t:18,dMode:"none",dMan:0.893,fff:1.15,galibo:4.0,rnd:true,Es:550,kS:1.04,nExp:0.9,kVB:1.1,barra:"flex",cond:"ACSR",K:10,vano:22,fMode:"pct",pct:3,w:0.976,Fh:500,Wb:11};
+const $=id=>document.getElementById(id);
+const fm=(x,d=2)=>x==null||isNaN(x)?"—":x.toLocaleString("es-CO",{minimumFractionDigits:d,maximumFractionDigits:d});
+const fmU=u=>fm(u,u%1?1:0);
+let cases=[];
+
+function fillUm(){$("Um").innerHTML=Object.keys(BIL_IEC).map(Number).sort((a,b)=>a-b).map(u=>`<option value="${u}">${fmU(u)} kV</option>`).join("");}
+function fillBIL(keep){
+  const Um=+$("Um").value,opts=BIL_IEC[Um]||[],s=$("BILsel"),prev=keep??s.value;
+  s.innerHTML=opts.map(b=>`<option value="${b}">${b} kV</option>`).join("")+`<option value="man">Otro valor…</option>`;
+  if(opts.includes(+prev)) s.value=String(prev); else if(prev==="man") s.value="man"; else s.value=String(opts[opts.length-1]??"man");
+}
+const FIELDS=["h","t","dMode","dMan","fff","galibo","Es","kS","nExp","kVB","barra","cond","K","vano","fMode","pct","w","Fh","Wb"];
+function setInputs(d){
+  $("Um").value=d.Um; fillBIL(String(d.BIL));
+  if(!(BIL_IEC[d.Um]||[]).includes(d.BIL)) $("BILsel").value="man";
+  $("BILman").value=d.BIL; FIELDS.forEach(k=>$(k).value=d[k]); $("rnd").checked=d.rnd;
+}
+function readInputs(){
+  const n=id=>parseFloat($(id).value),b=$("BILsel").value,o={Um:n("Um"),BIL:b==="man"?n("BILman"):+b,rnd:$("rnd").checked};
+  FIELDS.forEach(k=>o[k]=["dMode","barra","cond","fMode"].includes(k)?$(k).value:n(k)); o.Wb=o.Wb||0; return o;
+}
+function valid(p){
+  const e=[];
+  if(!(p.BIL>0))e.push("BIL"); if(!(p.h>=0))e.push("altitud"); if(!(p.t>-40&&p.t<60))e.push("temperatura");
+  if(p.dMode==="man"&&!(p.dMan>0.3&&p.dMan<1.2))e.push("δ manual");
+  if(!(p.fff>=1&&p.fff<=2.5))e.push("factor fase-fase");
+  if(!(p.Es>0&&p.kS>0&&p.kVB>0&&p.nExp>=0))e.push("parámetros del método");
+  if(!(p.galibo>0))e.push("gálibo");
+  if(p.barra==="flex"){ if(!(p.vano>0&&p.K>=0))e.push("vano o K"); if(p.fMode==="pct"&&!(p.pct>0))e.push("flecha"); if(p.fMode==="ten"&&!(p.w>0&&p.Fh>0))e.push("peso o tensión del conductor"); }
+  return e;
+}
+const DHINT={iec:"p = 101,3·e^(−h/8150) kPa ; δ = (p/101,3)·293/(273+t). Misma δ de la Entrega 1 (0,807 a 18 °C).",baro:"log b = log 76 − h/18 336 (b en cmHg) ; δ = 3,92·b/(273+t).",none:"Criterio de la Entrega 2: el BIL se escogió con NPR corregido por Ka (Entrega 1, ec. 13), así que las distancias se toman a condiciones de referencia y rige la Tabla 3.22.1.c del RETIE.",man:"Valor digitado por el usuario."};
+const kpi=(v,lab,sub,cls="")=>`<div class="kpi ${cls}"><b>${v}</b><span>${lab}</span>${sub?`<em>${sub}</em>`:""}</div>`;
+const m=x=>`${fm(x)} m`;
+
+function render(){
+  const p=readInputs();
+  $("BILmanBox").hidden=$("BILsel").value!=="man";
+  $("dManBox").hidden=p.dMode!=="man"; $("dHint").textContent=DHINT[p.dMode];
+  const fl=p.barra==="flex";
+  ["cond","K","vano","fMode","pct","w","Fh"].forEach(id=>$(id).disabled=!fl);
+  $("K").disabled=!fl||p.cond!=="otro";
+  $("pctBox").hidden=p.fMode!=="pct"; document.querySelectorAll(".tenBox").forEach(e=>e.hidden=p.fMode!=="ten");
+  $("condNote").textContent=fl?(p.fMode==="pct"?"Flecha supuesta como porcentaje del vano. Cuando se seleccione el conductor (entrega 4), cambie a «Por tensión de tendido» con su peso y tensión.":"Flecha calculada con f = vano²·w/(8·Fh) a partir del conductor seleccionado."):"Barraje rígido: no se suma la oscilación del conductor; la separación entre fases es la distancia fase-fase.";
+  const err=valid(p);
+  if(err.length){$("banner").className="banner no";$("banner").textContent="Revisa: "+err.join(", ")+".";return;}
+  const r=calcular(p); window._r=r;
+
+  $("chips").innerHTML=[`Um ${fmU(p.Um)} kV`,`BIL ${p.BIL} kV`,`${fm(p.h,0)} msnm`,p.dMode==="none"?"Distancias a condiciones de referencia":`δ = ${fm(r.delta,3)}`,fl?`Flecha ${fm(r.f_m)} m`:"Barraje rígido"].map(c=>`<span class="chip">${c}</span>`).join("");
+
+  const fails=r.checks.filter(c=>!c.ok), hard=fails.filter(c=>c.lvl==="no"), b=$("banner");
+  if(hard.length){b.className="banner no";b.textContent=`Atención: ${hard.map(c=>c.txt.toLowerCase()).join("; ")}.`;}
+  else if(fails.length){b.className="banner wa";b.textContent=`Cálculo completo. ${fails.length} criterio${fails.length>1?"s":""} define${fails.length>1?"n":""} el valor adoptado; ver verificaciones.`;}
+  else {b.className="banner ok";b.textContent="Cálculo completo. Todas las verificaciones cumplen.";}
+
+  const tab=v=>v==null?"":` · RETIE ${fm(v)}`;
+  $("k31").innerHTML=
+    kpi(fm(r.delta,3),"Densidad relativa del aire δ",{iec:`p = ${fm(r.pk,1)} kPa`,baro:`b = ${fm(r.b)} cmHg`,none:"BIL ya corregido por Ka",man:"valor manual"}[p.dMode])+
+    kpi(m(r.dftA),"Fase-tierra d f-t",`calc. ${fm(r.dft,3)}${tab(r.R&&r.R[1])}`,"hl")+
+    kpi(m(r.dffA),`Fase-fase d f-f (×${fm(p.fff)})`,`calc. ${fm(r.dff,3)} · con ×1,4–2: ${fm(r.dffMin)}–${fm(r.dffMax)} m`,"hl");
+  $("k32").innerHTML=
+    kpi(m(r.VBa),"Valor básico VB",`1,1·d f-t = ${fm(r.VB,3)}${tab(r.R&&r.R[2])}`)+
+    kpi(m(r.DvA),"Circulación de personal",`VB + 2,25 = ${fm(r.Dv,3)}${tab(r.R&&r.R[3])}`,"hl")+
+    kpi(m(r.DhA),"Zona de trabajo horizontal",`VB + 1,75 = ${fm(r.Dh,3)}${tab(r.R&&r.R[4])}`)+
+    kpi(m(r.DtvA),"Zona de trabajo vertical",`VB + 1,25 = ${fm(r.Dtv,3)}${tab(r.R&&r.R[5])}`)+
+    kpi(m(r.HvehA),"Altura sobre vías de vehículos",`VB + gálibo + 0,70 = ${fm(r.Hveh,3)} · T = ${fm(r.Tveh)} m`,"hl")+
+    kpi(m(r.Rcer.R),"Distancia al encerramiento R",`RETIE 3.22.1.a · ${r.Rcer.lab}`);
+  $("k33").innerHTML=
+    (fl?kpi(m(r.f_m),"Flecha del conductor",p.fMode==="pct"?`${fm(p.pct,1)} % de ${fm(p.vano,1)} m`:"vano²·w/(8·Fh)"):"")+
+    kpi(m(r.SfA),"Separación entre fases",fl?`d f-f + K√f = ${fm(r.Sf,3)}`:"= d f-f (rígido)","hl")+
+    kpi(m(r.DfeA),"Fase–estructura",fl?`d f-t + K√f = ${fm(r.Dfe,3)}`:"= d f-t (rígido)")+
+    kpi(m(r.WbMin),"Ancho de bahía mínimo",p.Wb>0?`diseño ${fm(p.Wb)} m`:"2·Sf + 2·D f-e",p.Wb>0&&p.Wb<r.WbMin?"warn":"")+
+    kpi(m(r.heqA),"Altura de equipos",`fórmula ${fm(r.heqF,3)}`,"hl")+
+    kpi(m(r.hbA),"Barras, punto más bajo mínimo",`fórmula ${fm(r.hbF,3)}`)+
+    (fl?kpi(m(r.amarreA),"Amarre de barras en pórtico",`h barras + f = ${fm(r.amarre,3)} · bajo ${fm(r.hbLow)} m`,"hl"):"")+
+    kpi(m(r.hremA),"Remate de líneas",`fórmula ${fm(r.hremF,3)} (mín. 6)`);
+
+  $("tChecks").innerHTML=`<tr><th class="l">Criterio</th><th>Comparación</th><th>Resultado</th></tr>`+r.checks.map(c=>`<tr><td class="l">${c.txt}</td><td>${c.cmp}</td><td class="${c.ok?"ok":c.lvl}">${c.ok?"Cumple":c.bad}</td></tr>`).join("");
+  renderCons(r); renderSVG(r); renderMemo(r); renderCases();
+}
+
+function consRows(r){
+  const R=r.R||[],p=r.p,fl=r.flex;
+  return [
+    ["g","Distancias mínimas"],
+    ["Fase-tierra d f-t",`${fm(p.kS)}·δ^(−${fm(p.nExp,1)})·BIL/Es`,r.dft,R[1],r.dftA],
+    ["Fase-fase d f-f",`${fm(p.fff)}·d f-t`,r.dff,null,r.dffA],
+    ["g","Distancias de seguridad"],
+    ["Valor básico VB",`${fm(p.kVB,1)}·d f-t`,r.VB,R[2],r.VBa],
+    ["Circulación de personal","VB + 2,25",r.Dv,R[3],r.DvA],
+    ["Zona de trabajo horizontal","VB + 1,75",r.Dh,R[4],r.DhA],
+    ["Zona de trabajo vertical","VB + 1,25",r.Dtv,R[5],r.DtvA],
+    ["Altura sobre vías de vehículos",`VB + ${fm(p.galibo)} + 0,70`,r.Hveh,null,r.HvehA],
+    ["Distancia al encerramiento R","RETIE 3.22.1.a",null,r.Rcer.R,r.Rcer.R],
+    ["g","Flexibilidad y bahía"],
+    ...(fl?[["Flecha f",p.fMode==="pct"?`${fm(p.pct,1)} % del vano`:"vano²·w/(8·Fh)",r.f_m,null,r.f_m]]:[]),
+    ["Separación entre fases Sf",fl?"d f-f + K√f":"d f-f",r.Sf,null,r.SfA],
+    ["Fase–estructura D f-e",fl?"d f-t + K√f":"d f-t",r.Dfe,null,r.DfeA],
+    ["Ancho de bahía (mín. calculado; adoptado = diseño)","2·Sf + 2·D f-e",r.WbMin,null,p.Wb>0?p.Wb:r.WbMin],
+    ["g","Distancias de diseño (alturas)"],
+    ["Altura de equipos","2,30 + 0,0105·Um",r.heqF,null,r.heqA],
+    ["Barras, punto más bajo","5 + 0,0125·Um",r.hbF,null,r.hbA],
+    ...(fl?[["Amarre de barras en pórtico","h barras + f",r.amarre,null,r.amarreA]]:[]),
+    ["Remate de líneas","5 + 0,006·Um ≥ 6",r.hremF,null,r.hremA]
+  ];
+}
+function renderCons(r){
+  $("tCons").innerHTML=`<tr><th class="l">Distancia</th><th class="l">Expresión</th><th>Calculado (m)</th><th>RETIE (m)</th><th>Adoptado (m)</th></tr>`+
+    consRows(r).map(x=>x[0]==="g"?`<tr class="grp"><td colspan="5">${x[1]}</td></tr>`:`<tr><td>${x[0]}</td><td class="l mut">${x[1]}</td><td>${x[2]==null?"—":fm(x[2],3)}</td><td>${x[3]==null?"—":fm(x[3])}</td><td><b>${fm(x[4])}</b></td></tr>`).join("");
+  $("consNote").textContent=(r.R?(r.retie.exact?`Fila RETIE para BIL ${r.p.BIL} kV.`:`BIL ${r.p.BIL} kV fuera de las filas de la tabla: valores interpolados.`):"El BIL está fuera de la Tabla 3.22.1.c.")+" «—» en RETIE: la tabla no publica valor para ese BIL.";
+}
+
+/* ---- memoria ---- */
+const I=s=>`<i>${s}</i>`, S=(a,b)=>`${a}<sub>${b}</sub>`, F=(a,b)=>`<span class="fr"><span>${a}</span><span>${b}</span></span>`, Q=x=>`√<span class="sq">${x}</span>`;
+const n3=x=>fm(x,3), n2=x=>fm(x,2), n4=x=>fm(x,4);
+function memoSteps(r){
+  const p=r.p,fl=r.flex,R=r.R||[],st=[],txt=[];
+  const add=(sec,t,d,eqs,ad)=>st.push({sec,t,d,eqs,ad});
+  const ADOP=v=>`<span class="ad">Adoptado ${m(v)}</span>`;
+  // δ
+  if(p.dMode==="iec") add("Condiciones del sitio","Densidad relativa del aire",`Corrige la rigidez dieléctrica del aire por altitud (${fm(p.h,0)} msnm) y temperatura (${fm(p.t,0)} °C).`,
+    [`${I("p")} = 101,3·${I("e")}<sup>−${I("h")}/8150</sup> = 101,3·${I("e")}<sup>−${fm(p.h,0)}/8150</sup> = <span class="r">${fm(r.pk,2)} kPa</span>`,
+     `${I("δ")} = ${F(I("p"),"101,3")}·${F("293","273 + "+I("t"))} = ${F(fm(r.pk,2),"101,3")}·${F("293","273 + "+fm(p.t,0))} = <span class="r">${n4(r.delta)}</span>`]);
+  else if(p.dMode==="baro") add("Condiciones del sitio","Densidad relativa del aire",`Presión barométrica a ${fm(p.h,0)} msnm y temperatura de ${fm(p.t,0)} °C.`,
+    [`log ${I("b")} = log 76 − ${F(I("h"),"18 336")} = ${n4(Math.log10(76))} − ${n4(p.h/18336)} → ${I("b")} = <span class="r">${n2(r.b)} cmHg</span>`,
+     `${I("δ")} = ${F("3,92·"+I("b"),"273 + "+I("t"))} = ${F("3,92·"+n2(r.b),"273 + "+fm(p.t,0))} = <span class="r">${n4(r.delta)}</span>`]);
+  else add("Condiciones del sitio","Densidad relativa del aire",p.dMode==="none"?"Las distancias se calculan a condiciones de referencia, porque el BIL ya incluye la corrección por altitud (Entrega 1, ec. 13).":"Valor fijado por el usuario.",[`${I("δ")} = <span class="r">${n4(r.delta)}</span>`]);
+  // dft
+  add("3.1 Distancias mínimas","Distancia mínima fase-tierra",`Separación en el aire entre una parte energizada y una estructura a tierra para soportar el BIL de ${p.BIL} kV.`,
+    [(r.delta===1?`${S(I("d"),"f-t")} = ${fm(p.kS)}·${F("BIL",S(I("E"),"s"))} = ${fm(p.kS)}·${F(p.BIL+" kV",p.Es+" kV/m")} = <span class="r">${n3(r.dft)} m</span>`:`${S(I("d"),"f-t")} = ${fm(p.kS)}·${I("δ")}<sup>−${fm(p.nExp,1)}</sup>·${F("BIL",S(I("E"),"s"))} = ${fm(p.kS)}·(${n4(r.delta)})<sup>−${fm(p.nExp,1)}</sup>·${F(p.BIL+" kV",p.Es+" kV/m")} = <span class="r">${n3(r.dft)} m</span>`)+
+     (R[1]!=null&&R[1]>r.dft?` <span class="mut">&lt; ${n2(R[1])} m (mínima IEC, RETIE 3.22.1.c)</span>`:"")+ADOP(r.dftA)]);
+  add("3.1 Distancias mínimas","Distancia mínima fase-fase",p.fff<1.4?`Para el rango I (Um ≤ 245 kV) la IEC asigna la misma distancia fase-fase y fase-tierra frente a rayo; el factor ${fm(p.fff)} es un criterio de diseño que deja holgura entre fases.`:`Los apuntes del curso la toman entre 1,4 y 2 veces la fase-tierra; aquí se usa el factor ${fm(p.fff)}.`,
+    [`${S(I("d"),"f-f")} = ${fm(p.fff)}·${S(I("d"),"f-t")} = ${fm(p.fff)}·${n3(r.dftBase)} = <span class="r">${n3(r.dff)} m</span>`+ADOP(r.dffA)]);
+  // seguridad
+  add("3.2 Distancias de seguridad","Valor básico",`Distancia fase-tierra aumentada un 10 %; sobre ella se suman las zonas de seguridad del RETIE.`,
+    [`${S(I("V"),"B")} = ${fm(p.kVB,1)}·${S(I("d"),"f-t")} = ${fm(p.kVB,1)}·${n3(r.dft)} = <span class="r">${n3(r.VB)} m</span>`+(R[2]!=null&&R[2]>r.VB?` <span class="mut">→ RETIE ${n2(R[2])} m</span>`:"")]);
+  add("3.2 Distancias de seguridad","Zonas de seguridad para el personal",`Altura libre para circular bajo conexiones (persona con los brazos levantados, 2,25 m) y zonas de trabajo sin maquinaria pesada.`,
+    [`${S(I("D"),"v")} = ${S(I("V"),"B")} + 2,25 = ${n3(r.VBa)} + 2,25 = <span class="r">${n3(r.Dv)} m</span>`+ADOP(r.DvA),
+     `${S(I("D"),"h")} = ${S(I("V"),"B")} + 1,75 = ${n3(r.VBa)} + 1,75 = <span class="r">${n3(r.Dh)} m</span>`+ADOP(r.DhA),
+     `${S(I("D"),"t,v")} = ${S(I("V"),"B")} + 1,25 = ${n3(r.VBa)} + 1,25 = <span class="r">${n3(r.Dtv)} m</span>`+ADOP(r.DtvA)]);
+  add("3.2 Distancias de seguridad","Circulación de vehículos",`Altura mínima de partes energizadas sobre las vías, para un gálibo de ${fm(p.galibo)} m. La distancia T del vehículo a las partes vivas es VB + 0,70 = ${n2(r.Tveh)} m.`,
+    [`${S(I("H"),"veh")} = ${S(I("V"),"B")} + gálibo + 0,70 = ${n3(r.VBa)} + ${n2(p.galibo)} + 0,70 = <span class="r">${n3(r.Hveh)} m</span>`+ADOP(r.HvehA)]);
+  // flexibilidad
+  if(fl){
+    add("3.3 Distancias de diseño","Flecha y distancia por flexibilidad",`El conductor tendido cuelga y oscila con el viento o en cortocircuito; se suma ese movimiento a las distancias mínimas (d y f en cm).`,
+      [p.fMode==="pct"?`${I("f")} = ${fm(p.pct,1)} %·${I("L")} = ${fm(p.pct/100,3)}·${fm(p.vano,1)} = <span class="r">${n3(r.f_m)} m</span>`:`${I("f")} = ${F(I("L")+"²·"+I("w"),"8·"+S(I("F"),"h"))} = ${F(fm(p.vano,1)+"²·"+fm(p.w,3),"8·"+fm(p.Fh,0))} = <span class="r">${n3(r.f_m)} m</span>`,
+       `${S(I("S"),"f")} = ${S(I("d"),"f-f")} + ${I("K")}${Q(I("f"))} = ${fm(r.dffA*100,1)} + ${fm(p.K)}·${Q(fm(r.f_cm,1))} = <span class="r">${fm(r.Sf*100,1)} cm</span>`+ADOP(r.SfA),
+       `${S(I("D"),"f-e")} = ${S(I("d"),"f-t")} + ${I("K")}${Q(I("f"))} = ${fm(r.dftA*100,1)} + ${fm(r.sway,1)} = <span class="r">${fm(r.Dfe*100,1)} cm</span>`+ADOP(r.DfeA),
+       `${S(I("W"),"b,mín")} = 2·${S(I("S"),"f")} + 2·${S(I("D"),"f-e")} = 2·${n2(r.SfA)} + 2·${n2(r.DfeA)} = <span class="r">${n2(r.WbMin)} m</span>`+(p.Wb>0?` <span class="mut">${p.Wb>=r.WbMin?"≤":">"} ${n2(p.Wb)} m de diseño</span>`:"")]);
+  } else add("3.3 Distancias de diseño","Separación entre fases (barraje rígido)","Sin oscilación del conductor, la separación entre fases es la distancia fase-fase.",[`${S(I("S"),"f")} = ${S(I("d"),"f-f")} = <span class="r">${n2(r.dffA)} m</span> ; ${S(I("W"),"b,mín")} = 2·${n2(r.SfA)} + 2·${n2(r.DfeA)} = <span class="r">${n2(r.WbMin)} m</span>`]);
+  add("3.3 Distancias de diseño","Altura de equipos",`Altura de las partes energizadas de los equipos sobre el suelo. Debe cubrir además la zona de circulación de personal.`,
+    [`${S(I("h"),"eq")} = 2,30 + 0,0105·${S(I("U"),"m")} = 2,30 + 0,0105·${fmU(p.Um)} = <span class="r">${n3(r.heqF)} m</span>`,
+     `${S(I("h"),"eq")} ≥ ${S(I("D"),"v")} = ${n2(r.DvA)} m`+ADOP(r.heqA)]);
+  add("3.3 Distancias de diseño","Altura de barras colectoras",fl?"Altura mínima en el punto más bajo del conductor; el amarre en el pórtico se sube la flecha.":"Altura mínima de las barras sobre el suelo.",
+    [`${S(I("h"),"b")} = 5 + 0,0125·${S(I("U"),"m")} = 5 + 0,0125·${fmU(p.Um)} = <span class="r">${n3(r.hbF)} m</span>`+(r.hbReq>r.hbF+1e-9?` <span class="mut">→ ${S(I("h"),"eq")} + ${S(I("d"),"f-f")} = ${n3(r.hbReq)} m</span>`:"")+ADOP(r.hbA),
+     ...(fl?[`${S(I("h"),"amarre")} = ${S(I("h"),"b")} + ${I("f")} = ${n2(r.hbA)} + ${n3(r.f_m)} = <span class="r">${n3(r.amarre)} m</span>`+ADOP(r.amarreA)+` <span class="mut">punto más bajo ${n2(r.hbLow)} m</span>`]:[])]);
+  add("3.3 Distancias de diseño","Altura de remate de líneas","Llegada de las líneas de transmisión al pórtico; la referencia exige como mínimo 6 m.",
+    [`${S(I("h"),"rem")} = 5 + 0,006·${S(I("U"),"m")} = 5 + 0,006·${fmU(p.Um)} = <span class="r">${n3(r.hremF)} m</span> ≥ 6 m`+ADOP(r.hremA)]);
+  return st;
+}
+function renderMemo(r){
+  const st=memoSteps(r); let html="",sec="",i=0;
+  st.forEach(s=>{ if(s.sec!==sec){sec=s.sec;html+=`<p class="memohead">${sec}</p>`;} i++;
+    html+=`<div class="step"><div class="num">${i}</div><div><h4>${s.t}</h4><p>${s.d}</p>${s.eqs.map(e=>`<div class="eq">${e}</div>`).join("")}</div></div>`; });
+  if(r.p.dMode==="none") html+=`<div class="info"><b>Criterio de altitud.</b> El BIL de ${r.p.BIL} kV se seleccionó en la coordinación de aislamiento con el nivel de protección del descargador corregido por K<sub>a</sub>. Por eso las distancias se calculan a condiciones de referencia (δ = 1) y, donde la Tabla 3.22.1.c del RETIE es más exigente, rige la tabla. Para corregir también las distancias por densidad del aire, cambie la opción de δ en la sección 1.</div>`;
+  else html+=`<div class="info"><b>Nota sobre la altitud.</b> En la coordinación de aislamiento, K<sub>a</sub> corrige el nivel de protección del descargador para escoger el BIL del equipo. Las distancias en el aire son aislamiento externo del patio y deben soportar ese BIL con el aire del sitio; por eso el método del curso incluye δ en la distancia fase-tierra.</div>`;
+  $("memo").innerHTML=html; window._memoTxt=st.map((s,k)=>`${k+1}. ${s.t}\n`+s.eqs.map(e=>"   "+htmlToText(e)).join("\n")).join("\n\n");
+}
+function htmlToText(h){const d=document.createElement("div");d.innerHTML=h.replace(/<span class="fr"><span>(.*?)<\/span><span>(.*?)<\/span><\/span>/g,"($1)/($2)").replace(/<sup>(.*?)<\/sup>/g,"^($1)").replace(/<span class="ad">(.*?)<\/span>/g,"  → $1");return d.textContent.replace(/\s+/g," ").trim();}
+
+/* ---- corte ---- */
+function renderSVG(r){
+  const p=r.p,Wb=r.Wb,s=r.SfA,half=Wb/2,xs=[-s,0,s],VB=r.VBa,top=Math.max(r.amarreA,r.hbLow)+0.9;
+  const vw=820,vh=460,padL=86,padR=120,padT=20,padB=60;
+  const sc=Math.min((vw-padL-padR)/(Wb+1.6),(vh-padT-padB)/top);
+  const X=x=>padL+(vw-padL-padR)/2+x*sc,Y=y=>vh-padB-y*sc;
+  const L=(x1,y1,x2,y2,c,w=1.5,da="")=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w}"${da?` stroke-dasharray="${da}"`:""}/>`;
+  const T=(x,y,t,a="middle",c="var(--tx)",w="400",z=11)=>`<text x="${x}" y="${y}" font-size="${z}" text-anchor="${a}" fill="${c}" font-weight="${w}">${t}</text>`;
+  let g=`<rect x="${X(-half-0.5)}" y="${Y(2.25)}" width="${(Wb+1)*sc}" height="${2.25*sc}" fill="var(--safe)" opacity=".7"/>`;
+  const zs=`fill="var(--zone)" opacity=".55" stroke="var(--live)" stroke-opacity=".35" stroke-dasharray="4 3"`;
+  xs.forEach(x=>{g+=`<circle cx="${X(x)}" cy="${Y(r.hbLow)}" r="${VB*sc}" ${zs}/>`;
+    g+=`<rect x="${X(x-0.25-VB)}" y="${Y(r.heqA+0.35+VB)}" width="${(0.5+2*VB)*sc}" height="${(0.35+2*VB)*sc}" rx="${VB*sc}" ${zs}/>`;});
+  g+=L(X(-half-0.8),Y(0),X(half+0.8),Y(0),"var(--mut)",2);
+  const colTop=r.flex?r.amarreA+0.6:r.hbA+0.6;
+  [-half,half].forEach(x=>g+=`<rect x="${X(x)-5}" y="${Y(colTop)}" width="10" height="${colTop*sc}" fill="var(--steel)"/>`);
+  g+=`<rect x="${X(-half)-5}" y="${Y(colTop)-8}" width="${Wb*sc+10}" height="8" fill="var(--steel)"/>`;
+  xs.forEach(x=>{g+=L(X(x),Y(colTop),X(x),Y(r.hbLow)+5,"var(--steel)",3,"3 2");g+=`<circle cx="${X(x)}" cy="${Y(r.hbLow)}" r="5" fill="var(--live)"/>`;
+    g+=`<rect x="${X(x)-4}" y="${Y(r.heqA-1)}" width="8" height="${(r.heqA-1)*sc}" fill="var(--steel)"/>`;
+    for(let i=0;i<5;i++) g+=`<rect x="${X(x)-7}" y="${Y(r.heqA-1+0.2*(i+1))}" width="14" height="${Math.max(2,0.1*sc)}" rx="2" fill="var(--mut)"/>`;
+    g+=`<rect x="${X(x)-0.25*sc}" y="${Y(r.heqA+0.35)}" width="${0.5*sc}" height="${0.35*sc}" rx="3" fill="var(--live)"/>`;
+    g+=L(X(x),Y(r.heqA+0.35),X(x),Y(r.hbLow)+5,"var(--live)",2,"5 3");});
+  const px=X(-s/2);
+  g+=`<g stroke="var(--tx)" stroke-width="2" fill="none" stroke-linecap="round"><circle cx="${px}" cy="${Y(1.62)}" r="${0.12*sc}"/>`+L(px,Y(1.5),px,Y(0.9),"var(--tx)",2)+L(px,Y(0.9),px-0.18*sc,Y(0),"var(--tx)",2)+L(px,Y(0.9),px+0.18*sc,Y(0),"var(--tx)",2)+L(px,Y(1.4),px-0.22*sc,Y(2.25),"var(--tx)",2)+L(px,Y(1.4),px+0.22*sc,Y(2.25),"var(--tx)",2)+`</g>`;
+  const A="var(--ac)";
+  const dV=(x,y0,y1,lab,side)=>{const xx=X(x);return L(xx,Y(y0),xx,Y(y1),A,1.2)+L(xx-4,Y(y0),xx+4,Y(y0),A,1.2)+L(xx-4,Y(y1),xx+4,Y(y1),A,1.2)+T(xx+6*side,(Y(y0)+Y(y1))/2+4,lab,side>0?"start":"end",A,"600");};
+  const dH=(x0,x1,y,lab,below)=>L(X(x0),Y(y),X(x1),Y(y),A,1.2)+L(X(x0),Y(y)-4,X(x0),Y(y)+4,A,1.2)+L(X(x1),Y(y)-4,X(x1),Y(y)+4,A,1.2)+T((X(x0)+X(x1))/2,below?Y(y)+15:Y(y)-6,lab,"middle",A,"600");
+  g+=dV(-half-0.4,0,r.hbLow,`barras ${fm(r.hbLow)} m`,-1);
+  if(r.flex) g+=L(X(-half)-14,Y(r.amarreA),X(-half)+14,Y(r.amarreA),A,1.4,"3 2")+T(X(-half)-18,Y(r.amarreA)+4,`amarre ${fm(r.amarreA)} m`,"end",A,"600");
+  g+=dV(half+0.4,0,r.heqA,`equipos ${fm(r.heqA)} m`,1);
+  g+=dV(-s/2+0.45,0,2.25,"2,25 m",1);
+  g+=dH(-s,0,r.hbLow+VB+0.25,`Sf = ${fm(s)} m`);
+  g+=dH(-half,half,-0.35,`Bahía ${fm(Wb)} m${p.Wb>0?` (mín. ${fm(r.WbMin)} m)`:""}`,true);
+  g+=L(X(s),Y(r.heqA+0.175),X(s)+VB*sc*0.7071,Y(r.heqA+0.175)-VB*sc*0.7071,"var(--live)",1.4)+T(X(s)+VB*sc*0.7071+4,Y(r.heqA+0.175)-VB*sc*0.7071-4,`VB ${fm(VB)} m`,"start","var(--live)","600");
+  g+=T(X(half)+10,Y(colTop)+4,`${fmU(p.Um)} kV · BIL ${p.BIL} kV`,"start","var(--mut)");
+  $("svgBox").innerHTML=`<svg viewBox="0 0 ${vw} ${vh}" width="100%" role="img" aria-label="Corte transversal de una bahía con alturas y separaciones adoptadas">${g}</svg>`;
+}
+
+/* ---- casos ---- */
+function renderCases(){
+  $("casesCard").hidden=!cases.length; if(!cases.length) return;
+  const cols=[["Caso",c=>c.name],["Um",c=>fmU(c.Um)],["BIL",c=>c.BIL],["h",c=>fm(c.h,0)],["δ",c=>fm(c.delta,3)],["d f-t",c=>fm(c.dftA)],["d f-f",c=>fm(c.dffA)],["Personal",c=>fm(c.DvA)],["Sf",c=>fm(c.SfA)],["Bahía mín.",c=>fm(c.WbMin)],["h equipos",c=>fm(c.heqA)],["Amarre",c=>fm(c.amarreA)],["",(c,i)=>`<button class="sec mini" data-del="${i}">Quitar</button>`]];
+  $("tCases").innerHTML=`<tr>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr>`+cases.map((c,i)=>`<tr>${cols.map(k=>`<td>${k[1](c,i)}</td>`).join("")}</tr>`).join("");
+  $("tCases").querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{cases.splice(+b.dataset.del,1);store();renderCases();});
+}
+const KEY="distSUBE_cases_v2";
+function store(){try{localStorage.setItem(KEY,JSON.stringify(cases));}catch(e){}}
+function toast(t){const e=$("toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800);}
+async function copy(text,msg){try{await navigator.clipboard.writeText(text);toast(msg);}catch(e){toast("No se pudo copiar en este navegador");}}
+
+/* ---- init ---- */
+fillUm(); setInputs(DEF);
+document.addEventListener("input",e=>{const id=e.target.id;if(!id)return;
+  if(id==="Um") fillBIL();
+  if(id==="cond"){const c=$("cond").value;if(c==="ACSR")$("K").value=10;else if(c==="Cu")$("K").value=1.75;}
+  render();});
+document.addEventListener("change",e=>{if(e.target.type==="checkbox")render();});
+$("btnReset").onclick=()=>{setInputs(DEF);render();toast("Valores de la S/E Termales restablecidos");};
+$("btnSave").onclick=()=>{const r=window._r;if(!r)return;const p=r.p;
+  cases.push({name:`Caso ${cases.length+1}`,Um:p.Um,BIL:p.BIL,h:p.h,delta:r.delta,dftA:r.dftA,dffA:r.dffA,DvA:r.DvA,SfA:r.SfA,WbMin:r.WbMin,heqA:r.heqA,amarreA:r.amarreA});store();renderCases();toast("Caso guardado");};
+$("btnCopy").onclick=()=>copy(["Distancia\tExpresión\tCalculado (m)\tRETIE (m)\tAdoptado (m)",...consRows(window._r).map(x=>x[0]==="g"?x[1]:[x[0],x[1],x[2]==null?"":fm(x[2],3),x[3]==null?"":fm(x[3]),fm(x[4])].join("\t"))].join("\n"),"Tabla copiada");
+$("btnCopyMemo").onclick=()=>copy(window._memoTxt||"","Memoria copiada");
+try{ if(window.self===window.top){$("btnPrint").hidden=false;$("btnPrint").onclick=()=>window.print();} }catch(e){}
+try{const s=JSON.parse(localStorage.getItem(KEY)||"[]");if(Array.isArray(s))cases=s;}catch(e){}
+render();
+</script>
+</body>
+</html>
